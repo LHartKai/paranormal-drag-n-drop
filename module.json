@@ -2,7 +2,7 @@
   "id": "paranormal-drag-n-drop",
   "title": "Paranormal Drag & Drop",
   "description": "Enables native Foundry VTT Item drag and drop from Ordem Paranormal 2 character inventories to compatible Foundry drop targets, including Item Piles.",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
@@ -30,5 +30,5 @@
     "styles/paranormal-drag-n-drop.css"
   ],
   "manifest": "https://raw.githubusercontent.com/LHartKai/paranormal-drag-n-drop/main/module.json",
-  "download": "https://github.com/LHartKai/paranormal-drag-n-drop/releases/download/v0.1.9/paranormal-drag-n-drop.zip"
+  "download": "https://github.com/LHartKai/paranormal-drag-n-drop/releases/download/v0.1.10/paranormal-drag-n-drop.zip"
 }

@@ -28,5 +28,6 @@
   ],
   "styles": [
     "styles/paranormal-drag-n-drop.css"
-  ]
+  ],
+  "manifest": "https://raw.githubusercontent.com/LHartKai/paranormal-drag-n-drop/main/module.json"
 }

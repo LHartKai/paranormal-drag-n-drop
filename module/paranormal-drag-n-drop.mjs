@@ -79,28 +79,58 @@ function installTransferHandler(sheetClass) {
       && SUPPORTED_ITEM_TYPES.has(item.type)
       && sourceActor.isOwner;
 
-    // Preserve the system's special handling (e.g. ocupacao) and native
-    // ActorSheetV2 behavior for every non-transfer case.
+    if (!isTransfer) return originalOnDropItem.call(this, event, item);
+
+    // Track destination documents before invoking the system/core drop handler.
+    // The handler's return value is useful, but the created embedded document
+    // is the authoritative confirmation that the copy arrived.
+    const previousIds = new Set(this.actor.items.map((ownedItem) => ownedItem.id));
     const created = await originalOnDropItem.call(this, event, item);
 
-    if (!isTransfer) return created;
+    const returnedDocuments = Array.isArray(created) ? created : [created];
+    let destinationItem = returnedDocuments.find((document) =>
+      document?.parent?.id === this.actor.id
+      && document.id !== item.id
+    );
 
-    // The original is removed only when the destination handler returned a
-    // successfully created embedded Item on this destination Actor.
-    const createdOnDestination = created
-      && created.parent?.id === this.actor.id
-      && created.id !== item.id;
+    if (!destinationItem) {
+      const newlyCreated = this.actor.items.filter((ownedItem) =>
+        !previousIds.has(ownedItem.id)
+        && ownedItem.type === item.type
+        && ownedItem.name === item.name
+      );
+      if (newlyCreated.length === 1) destinationItem = newlyCreated[0];
+    }
 
-    if (!createdOnDestination) return created;
+    if (!destinationItem) {
+      console.warn(`[${MODULE_ID}] Destination creation was not confirmed; source item kept.`, {
+        item: item.name,
+        sourceActor: sourceActor.id,
+        destinationActor: this.actor.id,
+        handlerResult: created
+      });
+      return created;
+    }
 
-    await item.delete();
-    console.info(`[${MODULE_ID}] Transferred item from source Actor to destination Actor.`, {
+    const sourceItem = sourceActor.items.get(item.id);
+    if (!sourceItem) {
+      console.warn(`[${MODULE_ID}] Destination received item, but source item was no longer present.`, {
+        item: item.name,
+        sourceActor: sourceActor.id,
+        destinationActor: this.actor.id
+      });
+      return created;
+    }
+
+    await sourceItem.delete();
+    console.info(`[${MODULE_ID}] Item transfer completed.`, {
       item: item.name,
       sourceActor: sourceActor.id,
-      destinationActor: this.actor.id
+      destinationActor: this.actor.id,
+      destinationItem: destinationItem.id
     });
 
-    return created;
+    return created ?? destinationItem;
   };
 }
 

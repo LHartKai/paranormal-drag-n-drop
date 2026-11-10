@@ -49,4 +49,4 @@ function configureNativeDragDrop() {
   );
 }
 
-Hooks.once("setup", configureNativeDragDrop);
+Hooks.once("ready", configureNativeDragDrop);

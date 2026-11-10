@@ -1,6 +1,13 @@
 name: Build and publish Foundry module
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (for example v0.1.7)"
+        required: true
+        default: "v0.1.7"
+        type: string
   push:
     tags:
       - "v*"
@@ -14,11 +21,21 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
 
-      - name: Validate module manifest
+      - name: Validate release tag and module manifest
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG"
+            exit 1
+          fi
           test -f module.json
           node -e "const m=require('./module.json'); if (!m.id || !m.version) process.exit(1); console.log(`Building ${m.id} v${m.version}`);"
+          VERSION="${RELEASE_TAG#v}"
+          node -e "const m=require('./module.json'); if (m.version !== process.argv[1]) { console.error('Tag and module.json version do not match'); process.exit(1); }" "$VERSION"
 
       - name: Build installable ZIP
         run: |
@@ -31,6 +48,8 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          target_commitish: main
           files: dist/paranormal-drag-n-drop.zip
           generate_release_notes: true
           fail_on_unmatched_files: true

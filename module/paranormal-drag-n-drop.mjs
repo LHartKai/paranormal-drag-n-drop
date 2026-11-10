@@ -10,9 +10,9 @@ const ITEM_SELECTOR = ".op2-lista-itens--inventario [data-item-id], .op2-lista-i
 const SHEET_SELECTOR = ".op2-ficha--personagem";
 
 /**
- * OP2 registers PersonagemSheet during init. The setup hook runs after init
- * has completed, so the system's sheet registration is available here.
- * Configure the class before normal actor-sheet instances are rendered.
+ * OP2 registers PersonagemSheet during init. Run at ready so the system and
+ * module initialization phases have both completed and the sheet registry is
+ * guaranteed to be available before the user opens a sheet.
  */
 function configureNativeDragDrop() {
   if (game.system.id !== SYSTEM_ID) return;
@@ -23,7 +23,7 @@ function configureNativeDragDrop() {
     .find((candidate) => candidate?.name === "PersonagemSheet");
 
   if (!sheetClass) {
-    console.warn(`[${MODULE_ID}] Could not locate OP2 PersonagemSheet during setup.`);
+    console.warn(`[${MODULE_ID}] Could not locate OP2 PersonagemSheet during ready.`);
     return;
   }
 

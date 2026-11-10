@@ -1,0 +1,36 @@
+name: Build and publish Foundry module
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate module manifest
+        run: |
+          test -f module.json
+          node -e "const m=require('./module.json'); if (!m.id || !m.version) process.exit(1); console.log(`Building ${m.id} v${m.version}`);"
+
+      - name: Build installable ZIP
+        run: |
+          mkdir -p dist/paranormal-drag-n-drop
+          cp module.json README.md LICENSE dist/paranormal-drag-n-drop/
+          cp -R module styles dist/paranormal-drag-n-drop/
+          cd dist
+          zip -r paranormal-drag-n-drop.zip paranormal-drag-n-drop
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/paranormal-drag-n-drop.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true

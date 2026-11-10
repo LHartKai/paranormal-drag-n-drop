@@ -1,0 +1,10 @@
+/* Visible feedback only; no changes to the OP2 sheet layout. */
+.paranormal-drag-n-drop__item[draggable="true"] {
+  cursor: grab;
+}
+.paranormal-drag-n-drop__item[draggable="true"]:active {
+  cursor: grabbing;
+}
+.paranormal-drag-n-drop--dragging {
+  opacity: 0.55;
+}

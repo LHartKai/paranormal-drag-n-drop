@@ -53,3 +53,4 @@ jobs:
           files: dist/paranormal-drag-n-drop.zip
           generate_release_notes: true
           fail_on_unmatched_files: true
+          overwrite_files: true

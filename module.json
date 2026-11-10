@@ -1,8 +1,8 @@
 {
   "id": "paranormal-drag-n-drop",
   "title": "Paranormal Drag & Drop",
-  "description": "Enables dragging equipment and tools from Ordem Paranormal 2 character inventories to compatible Foundry drop targets, including Item Piles.",
-  "version": "0.1.5",
+  "description": "Enables native Foundry VTT Item drag and drop from Ordem Paranormal 2 character inventories to compatible Foundry drop targets, including Item Piles.",
+  "version": "0.1.6",
   "compatibility": {
     "minimum": "13",
     "verified": "14"

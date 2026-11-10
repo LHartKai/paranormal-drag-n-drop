@@ -1,11 +1,14 @@
 /**
  * Paranormal Drag & Drop
- * Makes OP2 character inventory items emit the standard Foundry Item drag payload.
- * Drop behavior belongs to the receiving sheet/window/module (including Item Piles).
+ * Native Foundry Item drag sources for OP2 character inventories, plus an ActorSheetV2
+ * drop target so the system sheet can process dropped Items through its own handlers.
+ * Item Piles retains control of its own windows and drop targets.
  */
 const MODULE_ID = "paranormal-drag-n-drop";
 const SYSTEM_ID = "ordem-paranormal-2e";
 const ITEM_SELECTOR = ".op2-lista-itens--inventario [data-item-id], .op2-lista-itens--ferramentas [data-item-id]";
+const SHEET_SELECTOR = ".op2-ficha--personagem";
+const dropHandlers = new WeakMap();
 
 function isSupportedActor(actor) {
   return game.system.id === SYSTEM_ID && actor?.type === "personagem";
@@ -40,20 +43,34 @@ function onDragStart(event) {
 
   const app = appForElement(row);
   if (!isSupportedActor(app?.actor)) return;
-
   const item = app.actor.items.get(row.dataset.itemId);
   if (!item) return;
 
-  // This is the same payload format used by Foundry's native Item drag workflow.
   const payload = JSON.stringify(item.toDragData());
   if (event.dataTransfer) {
     event.dataTransfer.setData("text/plain", payload);
-    event.dataTransfer.setData("application/json", payload);
     event.dataTransfer.effectAllowed = "copy";
   }
-
   row.classList.add("paranormal-drag-n-drop--dragging");
   row.addEventListener("dragend", () => row.classList.remove("paranormal-drag-n-drop--dragging"), { once: true });
+}
+
+function bindActorDropTarget(app) {
+  if (!isSupportedActor(app?.actor)) return;
+  const root = asElement(app.element);
+  if (!root || dropHandlers.get(app) === root) return;
+
+  // Use Foundry's DragDrop controller and ActorSheetV2's own _onDrop pipeline.
+  // This invokes the system's existing _onDropItem override for special item types.
+  const controller = new foundry.applications.ux.DragDrop({
+    dropSelector: SHEET_SELECTOR,
+    permissions: { drop: () => app.isEditable },
+    callbacks: {
+      drop: (event) => app._onDrop(event)
+    }
+  });
+  controller.bind(root);
+  dropHandlers.set(app, root);
 }
 
 Hooks.once("ready", () => {
@@ -62,20 +79,22 @@ Hooks.once("ready", () => {
     return;
   }
 
-  // Do not attach a custom drop handler to the source sheet: every destination
-  // (ActorSheet, Item Piles app, other windows) must receive the unmodified event.
   document.addEventListener("dragstart", onDragStart, true);
 
   const onRender = (app, html) => {
-    if (isSupportedActor(app?.actor)) markInventoryRows(html ?? app.element);
+    if (!isSupportedActor(app?.actor)) return;
+    markInventoryRows(html ?? app.element);
+    bindActorDropTarget(app);
   };
   Hooks.on("renderApplicationV2", onRender);
   Hooks.on("renderActorSheet", onRender);
   Hooks.on("renderActorSheetV2", onRender);
 
   for (const app of Object.values(ui.windows)) {
-    if (isSupportedActor(app.actor)) markInventoryRows(app.element);
+    if (!isSupportedActor(app.actor)) continue;
+    markInventoryRows(app.element);
+    bindActorDropTarget(app);
   }
 
-  console.info(`[${MODULE_ID}] Native item drag sources enabled for OP2.`);
+  console.info(`[${MODULE_ID}] OP2 inventory drag sources and ActorSheetV2 drop targets enabled.`);
 });

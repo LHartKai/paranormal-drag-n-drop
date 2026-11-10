@@ -1,77 +1,66 @@
 /**
  * Paranormal Drag & Drop
- * Native Foundry Item drag sources for OP2 character inventories, plus an ActorSheetV2
- * drop target so the system sheet can process dropped Items through its own handlers.
- * Item Piles retains control of its own windows and drop targets.
+ * Connects OP2 inventory rows to ActorSheetV2's native drag/drop pipeline.
+ * The native Foundry handlers create/resolve the standard Item drag payload;
+ * receiving applications (including Item Piles) keep control of their drop logic.
  */
 const MODULE_ID = "paranormal-drag-n-drop";
 const SYSTEM_ID = "ordem-paranormal-2e";
 const ITEM_SELECTOR = ".op2-lista-itens--inventario [data-item-id], .op2-lista-itens--ferramentas [data-item-id]";
 const SHEET_SELECTOR = ".op2-ficha--personagem";
-const dropHandlers = new WeakMap();
 
 function isSupportedActor(actor) {
   return game.system.id === SYSTEM_ID && actor?.type === "personagem";
 }
 
-function asElement(value) {
-  if (value instanceof HTMLElement) return value;
-  if (value?.[0] instanceof HTMLElement) return value[0];
-  return null;
-}
+/**
+ * OP2 registers PersonagemSheet during its init hook. Modules' init hooks run
+ * after the system has registered its sheets, so extend that class's options
+ * before any sheet instance is created.
+ */
+function configureNativeDragDrop() {
+  if (game.system.id !== SYSTEM_ID) return;
 
-function appForElement(element) {
-  return Object.values(ui.windows).find((app) => {
-    const root = asElement(app.element);
-    return root && (root === element || root.contains(element));
-  });
+  const registrations = Object.values(CONFIG.Actor.sheetClasses?.personagem ?? {});
+  const sheetClass = registrations
+    .map((registration) => registration.cls)
+    .find((candidate) => candidate?.name === "PersonagemSheet");
+
+  if (!sheetClass) {
+    console.warn(`[${MODULE_ID}] Could not locate OP2 PersonagemSheet registration.`);
+    return;
+  }
+
+  const defaults = foundry.utils.deepClone(sheetClass.DEFAULT_OPTIONS ?? {});
+  const dragDrop = [...(defaults.dragDrop ?? [])];
+  const alreadyConfigured = dragDrop.some((entry) =>
+    entry.dragSelector === ITEM_SELECTOR && entry.dropSelector === SHEET_SELECTOR
+  );
+
+  if (!alreadyConfigured) {
+    dragDrop.push({
+      dragSelector: ITEM_SELECTOR,
+      dropSelector: SHEET_SELECTOR
+    });
+  }
+
+  defaults.dragDrop = dragDrop;
+  sheetClass.DEFAULT_OPTIONS = defaults;
+
+  console.info(`[${MODULE_ID}] Native ActorSheetV2 drag/drop configured for OP2 inventory.`);
 }
 
 function markInventoryRows(root) {
-  const element = asElement(root);
+  const element = root instanceof HTMLElement ? root : root?.[0];
   if (!element) return;
+
   for (const row of element.querySelectorAll(ITEM_SELECTOR)) {
     row.setAttribute("draggable", "true");
     row.classList.add("paranormal-drag-n-drop__item");
   }
 }
 
-function onDragStart(event) {
-  const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-  const row = target?.closest(ITEM_SELECTOR);
-  if (!row) return;
-
-  const app = appForElement(row);
-  if (!isSupportedActor(app?.actor)) return;
-  const item = app.actor.items.get(row.dataset.itemId);
-  if (!item) return;
-
-  const payload = JSON.stringify(item.toDragData());
-  if (event.dataTransfer) {
-    event.dataTransfer.setData("text/plain", payload);
-    event.dataTransfer.effectAllowed = "copy";
-  }
-  row.classList.add("paranormal-drag-n-drop--dragging");
-  row.addEventListener("dragend", () => row.classList.remove("paranormal-drag-n-drop--dragging"), { once: true });
-}
-
-function bindActorDropTarget(app) {
-  if (!isSupportedActor(app?.actor)) return;
-  const root = asElement(app.element);
-  if (!root || dropHandlers.get(app) === root) return;
-
-  // Use Foundry's DragDrop controller and ActorSheetV2's own _onDrop pipeline.
-  // This invokes the system's existing _onDropItem override for special item types.
-  const controller = new foundry.applications.ux.DragDrop({
-    dropSelector: SHEET_SELECTOR,
-    permissions: { drop: () => app.isEditable },
-    callbacks: {
-      drop: (event) => app._onDrop(event)
-    }
-  });
-  controller.bind(root);
-  dropHandlers.set(app, root);
-}
+Hooks.once("init", configureNativeDragDrop);
 
 Hooks.once("ready", () => {
   if (game.system.id !== SYSTEM_ID) {
@@ -79,22 +68,16 @@ Hooks.once("ready", () => {
     return;
   }
 
-  document.addEventListener("dragstart", onDragStart, true);
-
   const onRender = (app, html) => {
     if (!isSupportedActor(app?.actor)) return;
     markInventoryRows(html ?? app.element);
-    bindActorDropTarget(app);
   };
+
   Hooks.on("renderApplicationV2", onRender);
   Hooks.on("renderActorSheet", onRender);
   Hooks.on("renderActorSheetV2", onRender);
 
   for (const app of Object.values(ui.windows)) {
-    if (!isSupportedActor(app.actor)) continue;
-    markInventoryRows(app.element);
-    bindActorDropTarget(app);
+    if (isSupportedActor(app.actor)) markInventoryRows(app.element);
   }
-
-  console.info(`[${MODULE_ID}] OP2 inventory drag sources and ActorSheetV2 drop targets enabled.`);
 });

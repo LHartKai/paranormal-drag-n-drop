@@ -20,20 +20,21 @@ Enable **Paranormal Drag & Drop** in Manage Modules.
 
 ## Current scope
 
-- Enables native ActorSheetV2 drag/drop for equipment and tool inventory rows.
-- Uses Foundry's own drag-start and drop handlers rather than replacing the drag payload.
+- Registers the OP2 equipment and tool inventory selectors in `PersonagemSheet.DEFAULT_OPTIONS.dragDrop`.
+- Uses Foundry's native ActorSheetV2 drag-start and drop pipeline.
 - Leaves item transfer and inventory mutations to the receiving application/module.
-- Does not alter OP2 system files.
+- Does not alter OP2 system files or replace its sheet rendering and drag handlers.
 
 ## Testing checklist
 
-1. Open an OP2 character sheet and enter the Inventory tab.
-2. Drag an equipment item onto another editable OP2 character sheet.
-3. Confirm the item is handled by the destination sheet's native drop pipeline.
-4. Test a tool item the same way.
-5. With Item Piles enabled, test dropping onto an Item Piles-compatible container/token.
-6. Confirm item editing, equip toggles, charge buttons, and delete buttons still work.
+1. Restart Foundry after installing or updating the module.
+2. Open an OP2 character sheet and enter the Inventory tab.
+3. Drag an equipment item onto another editable OP2 character sheet.
+4. Confirm the item is handled by the destination sheet's native drop pipeline.
+5. Test a tool item the same way.
+6. With Item Piles enabled, test dropping onto an Item Piles-compatible container/token.
+7. Confirm item editing, equip toggles, charge buttons, and delete buttons still work.
 
-## Notes
+## Implementation notes
 
-The module adds the OP2 inventory selectors to the registered `PersonagemSheet` class's `dragDrop` options during initialization. It does not install a separate drop controller or intercept drops on other applications.
+The module configures the registered `PersonagemSheet` class during Foundry's `setup` hook, after the OP2 system has registered its sheet during `init`. It relies on the inherited `ActorSheetV2` DragDrop controller and does not install a separate drop controller, manually create drag payloads, or intercept drops on other applications.

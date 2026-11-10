@@ -1,10 +1,10 @@
-/* Visible feedback only; no changes to the OP2 sheet layout. */
-.paranormal-drag-n-drop__item[draggable="true"] {
+/* Visual feedback for inventory rows bound by Foundry's native DragDrop controller. */
+.op2-lista-itens--inventario [data-item-id][draggable="true"],
+.op2-lista-itens--ferramentas [data-item-id][draggable="true"] {
   cursor: grab;
 }
-.paranormal-drag-n-drop__item[draggable="true"]:active {
+
+.op2-lista-itens--inventario [data-item-id][draggable="true"]:active,
+.op2-lista-itens--ferramentas [data-item-id][draggable="true"]:active {
   cursor: grabbing;
-}
-.paranormal-drag-n-drop--dragging {
-  opacity: 0.55;
 }

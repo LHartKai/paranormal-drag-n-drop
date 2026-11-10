@@ -1,14 +1,14 @@
 # Paranormal Drag & Drop
 
-A small compatibility module that enables native Foundry VTT Item drag data on the **equipment** and **tool** rows in Ordem Paranormal 2 (OP2) character sheets.
+A compatibility module that connects the **equipment** and **tool** rows in Ordem Paranormal 2 (OP2) character inventories to Foundry VTT's native ActorSheetV2 drag-and-drop workflow.
 
-It does not implement item transfers, approvals, inventory management, or piles. Those behaviors belong to the destination module/system (for example, Item Piles).
+It does not implement item transfers, approvals, inventory management, or piles. Receiving applications (for example, Item Piles) retain control of their own drop behavior.
 
 ## Requirements
 
 - Foundry VTT 13 or 14
-- Ordem Paranormal 2 system (module targets system id `ordem-paranormal-2e`, version 0.11.0+)
-- A destination module that accepts Foundry Item drag data, such as Item Piles
+- Ordem Paranormal 2 system, module target id `ordem-paranormal-2e` (minimum version 0.10.0)
+- A destination that accepts standard Foundry Item drag data
 
 ## Installation
 
@@ -20,20 +20,20 @@ Enable **Paranormal Drag & Drop** in Manage Modules.
 
 ## Current scope
 
-- Makes equipment and tool inventory rows draggable in OP2 character sheets.
-- Writes the standard Foundry Item drag payload (`Item.toDragData()`) to the drag data transfer.
-- Leaves drop handling and all inventory mutations to the receiving application/module.
-- Does not alter the OP2 system files.
+- Enables native ActorSheetV2 drag/drop for equipment and tool inventory rows.
+- Uses Foundry's own drag-start and drop handlers rather than replacing the drag payload.
+- Leaves item transfer and inventory mutations to the receiving application/module.
+- Does not alter OP2 system files.
 
 ## Testing checklist
 
 1. Open an OP2 character sheet and enter the Inventory tab.
-2. Confirm equipment and tool rows show a grab cursor.
-3. Drag a row to a Foundry-compatible Item drop target.
-4. Confirm the target receives a normal Foundry Item payload with the correct Item UUID.
+2. Drag an equipment item onto another editable OP2 character sheet.
+3. Confirm the item is handled by the destination sheet's native drop pipeline.
+4. Test a tool item the same way.
 5. With Item Piles enabled, test dropping onto an Item Piles-compatible container/token.
-6. Confirm normal item editing, equip toggles, charge buttons, and delete buttons still work.
+6. Confirm item editing, equip toggles, charge buttons, and delete buttons still work.
 
 ## Notes
 
-The module uses delegated drag events and targets the OP2 inventory row selectors. OP2's special Occupation drop behavior is not changed. The module does not claim that Item Piles integration is fully configured; its system-specific item/quantity integration is a separate compatibility step.
+The module adds the OP2 inventory selectors to the registered `PersonagemSheet` class's `dragDrop` options during initialization. It does not install a separate drop controller or intercept drops on other applications.

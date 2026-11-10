@@ -18,7 +18,7 @@
         "id": "ordem-paranormal-2e",
         "type": "system",
         "compatibility": {
-          "minimum": "0.11.0"
+          "minimum": "0.10.0"
         }
       }
     ]

@@ -90,7 +90,8 @@ function installTransferHandler(sheetClass) {
     const returnedDocuments = Array.isArray(created) ? created : [created];
     let destinationItem = returnedDocuments.find((document) =>
       document?.parent?.id === this.actor.id
-      && document.id !== item.id
+      // Foundry may preserve an Item ID when embedding it on another Actor.
+      // The parent Actor, not the ID, distinguishes the destination document.
     );
 
     if (!destinationItem) {
